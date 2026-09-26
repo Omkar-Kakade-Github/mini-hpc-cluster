@@ -1,0 +1,14 @@
+<network>
+  <name>mini-hpc</name>
+  <forward mode='nat'/>
+  <bridge name='virbr130' stp='on' delay='0'/>
+  <ip address='192.168.130.1' netmask='255.255.255.0'>
+    <dhcp>
+      <range start='192.168.130.100' end='192.168.130.199'/>
+      <host mac='52:54:00:13:00:10' name='controller' ip='192.168.130.10'/>
+      <host mac='52:54:00:13:00:11' name='compute01' ip='192.168.130.11'/>
+      <host mac='52:54:00:13:00:12' name='compute02' ip='192.168.130.12'/>
+      <host mac='52:54:00:13:00:13' name='compute03' ip='192.168.130.13'/>
+    </dhcp>
+  </ip>
+</network>

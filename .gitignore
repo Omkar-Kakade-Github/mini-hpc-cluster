@@ -1,0 +1,7 @@
+.secrets/
+secrets/
+*.key
+*.pem
+*.qcow2
+*.img
+*.iso
