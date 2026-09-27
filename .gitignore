@@ -5,3 +5,4 @@ secrets/
 *.qcow2
 *.img
 *.iso
+.local/
