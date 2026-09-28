@@ -1,0 +1,6 @@
+---
+- name: Configure compute base services
+  hosts: compute
+  become: true
+  roles:
+    - base

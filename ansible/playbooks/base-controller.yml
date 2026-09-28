@@ -1,0 +1,6 @@
+---
+- name: Configure controller base services
+  hosts: controllers
+  become: true
+  roles:
+    - base

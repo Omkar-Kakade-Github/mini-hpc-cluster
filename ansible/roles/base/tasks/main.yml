@@ -1,0 +1,45 @@
+---
+- name: Configure controller time service
+  when: "'controllers' in group_names"
+  block:
+    - name: Install Chrony
+      ansible.builtin.apt:
+        name: chrony
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Serve time to the private lab subnet
+      ansible.builtin.lineinfile:
+        path: /etc/chrony/chrony.conf
+        regexp: '^allow 192\.168\.130\.0/24$'
+        line: 'allow 192.168.130.0/24'
+      notify: Restart Chrony
+
+    - name: Keep Chrony running after reboot
+      ansible.builtin.service:
+        name: chrony
+        enabled: true
+        state: started
+
+- name: Configure compute time client
+  when: "'compute' in group_names"
+  block:
+    - name: Create timesyncd drop-in directory
+      ansible.builtin.file:
+        path: /etc/systemd/timesyncd.conf.d
+        state: directory
+        mode: '0755'
+
+    - name: Point timesyncd at the controller
+      ansible.builtin.template:
+        src: timesyncd-cluster.conf.j2
+        dest: /etc/systemd/timesyncd.conf.d/90-mini-hpc.conf
+        mode: '0644'
+      notify: Restart timesyncd
+
+    - name: Keep timesyncd running after reboot
+      ansible.builtin.service:
+        name: systemd-timesyncd
+        enabled: true
+        state: started

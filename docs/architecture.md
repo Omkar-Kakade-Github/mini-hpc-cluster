@@ -54,6 +54,12 @@ are required so file ownership means the same thing on every node. Jobs run on
 compute VMs; users submit through the controller. Slurm accounting and policy
 are stored through `slurmdbd` in MariaDB on the controller.
 
+The controller uses Chrony to synchronize with an upstream time source and
+serves NTP on the private subnet. Compute nodes use systemd-timesyncd to poll
+the controller. Close clocks are required for Munge credential validation. If
+the controller's time service fails, compute clocks keep running but may drift;
+the outage behavior still needs a measured failure test.
+
 ## Failure domains and limits
 
 * Loss of `compute01`, `compute02`, or `compute03` removes that node's capacity;

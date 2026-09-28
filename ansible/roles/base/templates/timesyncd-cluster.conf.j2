@@ -1,0 +1,4 @@
+# Managed by Ansible: compute nodes use the controller for time.
+[Time]
+NTP={{ hostvars[groups['controllers'][0]].ansible_host }}
+FallbackNTP=
