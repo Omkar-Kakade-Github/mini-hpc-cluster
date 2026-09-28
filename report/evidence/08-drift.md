@@ -6,4 +6,4 @@ For file drift, a harmless `# lab drift probe` comment was appended to compute02
 
 For database policy drift, the `short` QoS `MaxJobsPU` was changed from 2 to 3. `sacctmgr` confirmed `short|3`. The Slurm policy playbook reported one change and restored `short|2`. Another policy run was already observed at `changed=0`. The role now checks and restores QoS values, parent account shares, user default accounts, and user QoS associations rather than merely creating missing rows.
 
-`scripts/check-static.sh` passed locally after it exposed and prompted repair of a pre-existing syntax typo in `scripts/prepare-controller.sh`. The GitHub Actions workflow contains the same static checks but had not run remotely when this evidence was recorded.
+`scripts/check-static.sh` passed locally after it exposed and prompted repair of a pre-existing syntax typo in `scripts/prepare-controller.sh`. The first clean GitHub Actions run exposed a missing `ansible.posix` collection in the pinned requirements. After adding it, the hosted validation passed on run 36476050628. The static script also checks relative Markdown links.

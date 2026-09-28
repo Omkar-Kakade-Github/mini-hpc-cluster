@@ -2,7 +2,7 @@
 
 A laptop-scale HPC platform built from four Ubuntu 24.04 VMs. It combines **KVM/libvirt, Ansible, OpenLDAP/SSSD, NFS, Munge, Slurm accounting and QoS, cgroup v2, environment modules, and Prometheus** into a working three-node compute pool.
 
-**Status:** Deployed and tested locally on 2026-09-28. The [project report](report/final-report.md) separates measured behavior from configured policy and untested limits.
+**Status:** Deployed and tested locally on 2026-09-28; the [GitHub Actions validation](https://github.com/Omkar-Kakade-Github/mini-hpc-cluster/actions/runs/36476050628) passed on a clean runner. The [project report](report/final-report.md) separates measured behavior from configured policy and untested limits.
 
 ## At a glance
 
