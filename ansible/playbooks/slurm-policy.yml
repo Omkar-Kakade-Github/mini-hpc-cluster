@@ -1,0 +1,8 @@
+---
+- name: Configure Slurm accounts, fair-share, and QoS
+  hosts: controllers
+  become: true
+  tasks:
+    - ansible.builtin.import_role:
+        name: slurm
+        tasks_from: policy

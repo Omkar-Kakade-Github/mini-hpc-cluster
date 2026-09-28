@@ -1,0 +1,6 @@
+---
+- name: Install example workload modules
+  hosts: all
+  become: true
+  roles:
+    - modules

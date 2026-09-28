@@ -1,0 +1,8 @@
+---
+- name: Configure Slurm scheduler and compute daemons
+  hosts: all
+  become: true
+  tasks:
+    - ansible.builtin.import_role:
+        name: slurm
+        tasks_from: config

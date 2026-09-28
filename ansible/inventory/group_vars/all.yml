@@ -1,0 +1,11 @@
+---
+cluster_domain: mini-hpc.test
+ldap_base_dn: dc=mini-hpc,dc=test
+ldap_server_name: controller.mini-hpc.test
+lab_secrets_dir: "{{ inventory_dir }}/../../secrets"
+hpc_group_gid: 20000
+hpc_users:
+  - name: student1
+    uid: 20001
+  - name: student2
+    uid: 20002

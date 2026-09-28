@@ -1,0 +1,87 @@
+---
+- name: Load LDAP administrator password for this play
+  ansible.builtin.set_fact:
+    ldap_admin_password_runtime: "{{ lookup('file', lab_secrets_dir + '/ldap_admin_password') | trim }}"
+  no_log: true
+
+- name: Create LDAP organizational units
+  community.general.ldap_entry:
+    dn: "ou={{ item }},{{ ldap_base_dn }}"
+    objectClass:
+      - top
+      - organizationalUnit
+    attributes:
+      ou: "{{ item }}"
+    server_uri: ldapi:///
+    bind_dn: "cn=admin,{{ ldap_base_dn }}"
+    bind_pw: "{{ ldap_admin_password_runtime }}"
+  loop:
+    - People
+    - Groups
+  no_log: true
+
+- name: Create shared HPC POSIX group
+  community.general.ldap_entry:
+    dn: "cn=hpc,ou=Groups,{{ ldap_base_dn }}"
+    objectClass:
+      - top
+      - posixGroup
+    attributes:
+      cn: hpc
+      gidNumber: "{{ hpc_group_gid | string }}"
+      memberUid: "{{ hpc_users | map(attribute='name') | list }}"
+    server_uri: ldapi:///
+    bind_dn: "cn=admin,{{ ldap_base_dn }}"
+    bind_pw: "{{ ldap_admin_password_runtime }}"
+  no_log: true
+
+- name: Enforce shared group membership and numeric ID
+  community.general.ldap_attrs:
+    dn: "cn=hpc,ou=Groups,{{ ldap_base_dn }}"
+    attributes:
+      gidNumber: "{{ hpc_group_gid | string }}"
+      memberUid: "{{ hpc_users | map(attribute='name') | list }}"
+    state: exact
+    server_uri: ldapi:///
+    bind_dn: "cn=admin,{{ ldap_base_dn }}"
+    bind_pw: "{{ ldap_admin_password_runtime }}"
+  no_log: true
+
+- name: Create LDAP users with fixed UIDs
+  community.general.ldap_entry:
+    dn: "uid={{ item.name }},ou=People,{{ ldap_base_dn }}"
+    objectClass:
+      - top
+      - inetOrgPerson
+      - posixAccount
+      - shadowAccount
+    attributes:
+      uid: "{{ item.name }}"
+      cn: "{{ item.name }}"
+      sn: Student
+      uidNumber: "{{ item.uid | string }}"
+      gidNumber: "{{ hpc_group_gid | string }}"
+      homeDirectory: "/home/hpc/{{ item.name }}"
+      loginShell: /bin/bash
+      userPassword: "{{ lookup('file', lab_secrets_dir + '/' + item.name + '_ssha') | trim }}"
+    server_uri: ldapi:///
+    bind_dn: "cn=admin,{{ ldap_base_dn }}"
+    bind_pw: "{{ ldap_admin_password_runtime }}"
+  loop: "{{ hpc_users }}"
+  no_log: true
+
+- name: Enforce LDAP user identity and passwords
+  community.general.ldap_attrs:
+    dn: "uid={{ item.name }},ou=People,{{ ldap_base_dn }}"
+    attributes:
+      uidNumber: "{{ item.uid | string }}"
+      gidNumber: "{{ hpc_group_gid | string }}"
+      homeDirectory: "/home/hpc/{{ item.name }}"
+      loginShell: /bin/bash
+      userPassword: "{{ lookup('file', lab_secrets_dir + '/' + item.name + '_ssha') | trim }}"
+    state: exact
+    server_uri: ldapi:///
+    bind_dn: "cn=admin,{{ ldap_base_dn }}"
+    bind_pw: "{{ ldap_admin_password_runtime }}"
+  loop: "{{ hpc_users }}"
+  no_log: true

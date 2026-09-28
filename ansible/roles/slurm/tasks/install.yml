@@ -1,0 +1,20 @@
+---
+- name: Install scheduler components on the controller
+  ansible.builtin.apt:
+    name:
+      - slurmctld
+      - slurm-client
+      - slurm-wlm-basic-plugins
+    state: present
+    lock_timeout: 300
+  when: "'controllers' in group_names"
+
+- name: Install scheduler components on compute nodes
+  ansible.builtin.apt:
+    name:
+      - slurmd
+      - slurm-client
+      - slurm-wlm-basic-plugins
+    state: present
+    lock_timeout: 300
+  when: "'compute' in group_names"

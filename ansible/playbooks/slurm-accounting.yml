@@ -1,0 +1,9 @@
+---
+- name: Configure controller Slurm accounting database
+  hosts: controllers
+  become: true
+  tasks:
+    - name: Apply accounting role tasks
+      ansible.builtin.import_role:
+        name: slurm
+        tasks_from: accounting

@@ -1,0 +1,49 @@
+---
+- name: Install NFS server
+  ansible.builtin.apt:
+    name: nfs-kernel-server
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+    lock_timeout: 300
+
+- name: Create shared HPC home root
+  ansible.builtin.file:
+    path: /home/hpc
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Create fixed-UID student home directories
+  ansible.builtin.file:
+    path: "/home/hpc/{{ item.name }}"
+    state: directory
+    owner: "{{ item.uid | string }}"
+    group: "{{ hpc_group_gid | string }}"
+    mode: '0700'
+  loop: "{{ hpc_users }}"
+
+- name: Create NFS export configuration directory
+  ansible.builtin.file:
+    path: /etc/exports.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Export shared homes to the private cluster subnet
+  ansible.builtin.copy:
+    dest: /etc/exports.d/mini-hpc.exports
+    content: '/home/hpc 192.168.130.0/24(rw,sync,root_squash,no_subtree_check)
+'
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reload NFS exports
+
+- name: Keep NFS server running after reboot
+  ansible.builtin.service:
+    name: nfs-kernel-server
+    enabled: true
+    state: started

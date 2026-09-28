@@ -1,0 +1,12 @@
+---
+- name: Install the node monitoring agent
+  hosts: all
+  become: true
+  roles:
+    - monitoring_agent
+
+- name: Configure the monitoring server
+  hosts: controllers
+  become: true
+  roles:
+    - monitoring_server

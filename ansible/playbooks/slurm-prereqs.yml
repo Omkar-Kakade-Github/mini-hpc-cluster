@@ -1,0 +1,9 @@
+---
+- name: Establish Slurm service identity and Munge trust
+  hosts: all
+  become: true
+  tasks:
+    - name: Apply Slurm prerequisite role tasks
+      ansible.builtin.import_role:
+        name: slurm
+        tasks_from: prereqs

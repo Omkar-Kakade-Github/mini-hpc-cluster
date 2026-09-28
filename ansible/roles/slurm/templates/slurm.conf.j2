@@ -1,0 +1,33 @@
+# Managed by Ansible. All nodes receive the same scheduler policy.
+ClusterName=mini-hpc
+SlurmctldHost=controller(192.168.130.10)
+SlurmUser=slurm
+SlurmdUser=root
+AuthType=auth/munge
+SlurmctldPort=6817
+SlurmdPort=6818
+SlurmctldPidFile=/run/slurmctld/slurmctld.pid
+SlurmdPidFile=/run/slurm/slurmd.pid
+StateSaveLocation=/var/lib/slurm/slurmctld
+SlurmdSpoolDir=/var/spool/slurmd
+ReturnToService=2
+ProctrackType=proctrack/cgroup
+TaskPlugin=task/affinity,task/cgroup
+SelectType=select/cons_tres
+SelectTypeParameters=CR_Core_Memory
+JobAcctGatherType=jobacct_gather/cgroup
+JobAcctGatherFrequency=task=5
+SchedulerType=sched/backfill
+MpiDefault=none
+AccountingStorageType=accounting_storage/slurmdbd
+AccountingStorageHost=controller
+AccountingStoragePort=6819
+AccountingStorageEnforce=associations,limits,qos
+PriorityType=priority/multifactor
+PriorityWeightFairshare=1000
+PriorityWeightAge=100
+PriorityDecayHalfLife=1-0
+DefMemPerCPU=512
+NodeName=compute[01-03] CPUs=4 Boards=1 SocketsPerBoard=1 CoresPerSocket=4 ThreadsPerCore=1 RealMemory=2700 State=UNKNOWN
+PartitionName=short Nodes=compute[01-03] Default=YES MaxTime=00:05:00 State=UP
+PartitionName=batch Nodes=compute[01-03] Default=NO MaxTime=01:00:00 State=UP

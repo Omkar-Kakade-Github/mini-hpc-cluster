@@ -1,0 +1,8 @@
+---
+- name: Install scheduler packages
+  hosts: all
+  become: true
+  tasks:
+    - ansible.builtin.import_role:
+        name: slurm
+        tasks_from: install

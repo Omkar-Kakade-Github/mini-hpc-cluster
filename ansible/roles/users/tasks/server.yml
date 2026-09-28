@@ -1,0 +1,74 @@
+---
+- name: Check whether slapd is already installed
+  ansible.builtin.stat:
+    path: /usr/sbin/slapd
+  register: slapd_binary
+
+- name: Preseed OpenLDAP package configuration
+  ansible.builtin.debconf:
+    name: slapd
+    question: "{{ item.question }}"
+    vtype: "{{ item.vtype }}"
+    value: "{{ item.value }}"
+  loop:
+    - { question: slapd/no_configuration, vtype: boolean, value: 'false' }
+    - { question: slapd/domain, vtype: string, value: "{{ cluster_domain }}" }
+    - { question: shared/organization, vtype: string, value: 'Mini HPC Lab' }
+    - { question: slapd/password1, vtype: password, value: "{{ lookup('file', lab_secrets_dir + '/ldap_admin_password') | trim }}" }
+    - { question: slapd/password2, vtype: password, value: "{{ lookup('file', lab_secrets_dir + '/ldap_admin_password') | trim }}" }
+    - { question: slapd/backend, vtype: select, value: MDB }
+  no_log: true
+  when: not slapd_binary.stat.exists
+
+- name: Install OpenLDAP server and management tools
+  ansible.builtin.apt:
+    name:
+      - slapd
+      - ldap-utils
+      - python3-ldap
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+    lock_timeout: 300
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- name: Create protected directory for LDAP TLS material
+  ansible.builtin.file:
+    path: /etc/ldap/tls
+    state: directory
+    owner: root
+    group: openldap
+    mode: '0750'
+
+- name: Distribute LDAP server TLS material
+  ansible.builtin.copy:
+    src: "{{ lab_secrets_dir }}/{{ item.name }}"
+    dest: "/etc/ldap/tls/{{ item.dest }}"
+    owner: root
+    group: openldap
+    mode: "{{ item.mode }}"
+  loop:
+    - { name: lab-ca.crt, dest: ca.crt, mode: '0644' }
+    - { name: controller.crt, dest: controller.crt, mode: '0644' }
+    - { name: controller.key, dest: controller.key, mode: '0640' }
+  no_log: true
+  notify: Restart slapd
+
+- name: Configure slapd TLS certificate paths
+  community.general.ldap_attrs:
+    dn: cn=config
+    server_uri: ldapi:///
+    sasl_class: external
+    state: exact
+    attributes:
+      olcTLSCACertificateFile: /etc/ldap/tls/ca.crt
+      olcTLSCertificateFile: /etc/ldap/tls/controller.crt
+      olcTLSCertificateKeyFile: /etc/ldap/tls/controller.key
+
+- name: Enable LDAPS listener
+  ansible.builtin.lineinfile:
+    path: /etc/default/slapd
+    regexp: '^SLAPD_SERVICES='
+    line: 'SLAPD_SERVICES="ldap:/// ldapi:/// ldaps:///"'
+  notify: Restart slapd

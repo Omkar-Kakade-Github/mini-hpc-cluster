@@ -1,0 +1,85 @@
+---
+- name: Check common identity, names, and Munge
+  hosts: all
+  become: true
+  tasks:
+    - name: Resolve student1 through NSS
+      ansible.builtin.command: getent passwd student1
+      register: student_identity
+      changed_when: false
+
+    - name: Assert the fixed LDAP identity
+      ansible.builtin.assert:
+        that:
+          - "student_identity.stdout.split(':')[2] == '20001'"
+          - "student_identity.stdout.split(':')[3] == '20000'"
+          - "student_identity.stdout.split(':')[5] == '/home/hpc/student1'"
+
+    - name: Check Munge service
+      ansible.builtin.command: systemctl is-active munge
+      register: munge_health
+      changed_when: false
+      failed_when: munge_health.stdout != 'active'
+
+    - name: Resolve controller's private address
+      ansible.builtin.command: getent hosts controller.mini-hpc.test
+      register: controller_name
+      changed_when: false
+      failed_when: "'192.168.130.10' not in controller_name.stdout"
+
+- name: Check each compute node
+  hosts: compute
+  become: true
+  tasks:
+    - name: Trigger the lazy NFS automount
+      ansible.builtin.stat:
+        path: /home/hpc/student1
+      register: shared_home
+      failed_when: not shared_home.stat.exists
+
+    - name: Check shared home mount source
+      ansible.builtin.command: findmnt -n -o SOURCE /home/hpc
+      register: nfs_source
+      changed_when: false
+      failed_when: "'controller.mini-hpc.test:/home/hpc' not in nfs_source.stdout"
+
+    - name: Check compute daemon
+      ansible.builtin.command: systemctl is-active slurmd
+      register: slurmd_health
+      changed_when: false
+      failed_when: slurmd_health.stdout != 'active'
+
+- name: Check scheduler, accounting, and monitoring
+  hosts: controllers
+  become: true
+  tasks:
+    - name: Check controller and database daemons
+      ansible.builtin.command: "systemctl is-active {{ item }}"
+      register: controller_daemons
+      loop:
+        - slapd
+        - nfs-kernel-server
+        - mariadb
+        - slurmdbd
+        - slurmctld
+        - prometheus
+      changed_when: false
+      failed_when: controller_daemons.stdout != 'active'
+
+    - name: Query registered compute nodes
+      ansible.builtin.shell: "sinfo -N -h -o '%N' | sort -u"
+      register: slurm_nodes
+      changed_when: false
+      failed_when: "slurm_nodes.stdout_lines | sort != groups['compute'] | sort"
+
+    - name: Query monitoring scrape targets
+      ansible.builtin.uri:
+        url: http://127.0.0.1:9090/api/v1/targets
+        return_content: true
+      register: target_response
+
+    - name: Assert all four exporters are healthy
+      ansible.builtin.assert:
+        that:
+          - target_response.json.data.activeTargets | length == 4
+          - target_response.json.data.activeTargets | selectattr('health', 'equalto', 'up') | list | length == 4

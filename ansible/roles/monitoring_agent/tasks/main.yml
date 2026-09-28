@@ -1,0 +1,12 @@
+---
+- name: Install host metrics exporter
+  ansible.builtin.apt:
+    name: prometheus-node-exporter
+    state: present
+    lock_timeout: 300
+
+- name: Keep host metrics exporter running
+  ansible.builtin.service:
+    name: prometheus-node-exporter
+    enabled: true
+    state: started

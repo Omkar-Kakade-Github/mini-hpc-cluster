@@ -1,0 +1,9 @@
+---
+- name: Trust the public lab CA
+  ansible.builtin.copy:
+    src: "{{ lab_secrets_dir }}/lab-ca.crt"
+    dest: /usr/local/share/ca-certificates/mini-hpc-lab-ca.crt
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Refresh system CA store

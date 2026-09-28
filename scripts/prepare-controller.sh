@@ -27,7 +27,7 @@ install -d -m 0700 "$vm_dir" "$secret_dir"
 if [[ -e "$disk_path" && ! -f "$key_path" ]]; then
     echo "Existing controller disk needs its original lab SSH key: $key_path" >&2
     exit 1
-fi666666666666666
+fi
 if [[ ! -f "$key_path" ]]; then
     ssh-keygen -q -t ed25519 -N '' -C mini-hpc-lab -f "$key_path"
 fi

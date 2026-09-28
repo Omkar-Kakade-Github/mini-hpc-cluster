@@ -1,0 +1,18 @@
+---
+- name: Export shared user homes
+  hosts: controllers
+  become: true
+  tasks:
+    - name: Apply NFS server tasks
+      ansible.builtin.import_role:
+        name: storage
+        tasks_from: server
+
+- name: Mount shared user homes
+  hosts: compute
+  become: true
+  tasks:
+    - name: Apply NFS client tasks
+      ansible.builtin.import_role:
+        name: storage
+        tasks_from: client

@@ -1,0 +1,41 @@
+---
+- name: Create fixed Slurm service group
+  ansible.builtin.group:
+    name: slurm
+    gid: 64030
+    state: present
+
+- name: Create fixed Slurm service account
+  ansible.builtin.user:
+    name: slurm
+    uid: 64030
+    group: slurm
+    shell: /usr/sbin/nologin
+    home: /var/lib/slurm
+    create_home: false
+    password_lock: true
+    state: present
+
+- name: Install Munge authentication service
+  ansible.builtin.apt:
+    name: munge
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+    lock_timeout: 300
+
+- name: Share the single Munge key with every Slurm node
+  ansible.builtin.copy:
+    src: "{{ lab_secrets_dir }}/munge.key"
+    dest: /etc/munge/munge.key
+    owner: munge
+    group: munge
+    mode: '0400'
+  no_log: true
+  notify: Restart munge
+
+- name: Keep Munge running after reboot
+  ansible.builtin.service:
+    name: munge
+    enabled: true
+    state: started

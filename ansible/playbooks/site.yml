@@ -1,0 +1,11 @@
+---
+- ansible.builtin.import_playbook: base-all.yml
+- ansible.builtin.import_playbook: identity.yml
+- ansible.builtin.import_playbook: storage.yml
+- ansible.builtin.import_playbook: slurm-prereqs.yml
+- ansible.builtin.import_playbook: slurm-accounting.yml
+- ansible.builtin.import_playbook: slurm-install.yml
+- ansible.builtin.import_playbook: slurm-config.yml
+- ansible.builtin.import_playbook: slurm-policy.yml
+- ansible.builtin.import_playbook: modules.yml
+- ansible.builtin.import_playbook: monitoring.yml

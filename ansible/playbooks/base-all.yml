@@ -1,0 +1,6 @@
+---
+- name: Configure base services on all cluster VMs
+  hosts: all
+  become: true
+  roles:
+    - base

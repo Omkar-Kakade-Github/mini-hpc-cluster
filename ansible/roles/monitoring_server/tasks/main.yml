@@ -1,0 +1,21 @@
+---
+- name: Install Prometheus on the controller
+  ansible.builtin.apt:
+    name: prometheus
+    state: present
+    lock_timeout: 300
+
+- name: Configure all cluster scrape targets
+  ansible.builtin.template:
+    src: prometheus.yml.j2
+    dest: /etc/prometheus/prometheus.yml
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart prometheus
+
+- name: Keep Prometheus running
+  ansible.builtin.service:
+    name: prometheus
+    enabled: true
+    state: started

@@ -1,0 +1,19 @@
+---
+- name: Issue a fresh credential on the controller
+  hosts: controllers
+  tasks:
+    - name: Encode controller user identity with Munge
+      ansible.builtin.command: munge -n
+      register: munge_credential
+      changed_when: false
+      no_log: true
+
+- name: Verify controller credential on every compute node
+  hosts: compute
+  tasks:
+    - name: Decode controller credential using the local Munge daemon
+      ansible.builtin.command:
+        cmd: unmunge
+        stdin: "{{ hostvars[groups['controllers'][0]].munge_credential.stdout }}"
+      changed_when: false
+      no_log: true

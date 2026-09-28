@@ -1,0 +1,48 @@
+---
+- name: Install environment modules and Python workload runtime
+  ansible.builtin.apt:
+    name:
+      - environment-modules
+      - python3
+    state: present
+    lock_timeout: 300
+
+- name: Create example workload directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - /opt/mini-hpc/bin
+    - /opt/mini-hpc/examples
+    - /usr/share/modules/modulefiles/mini-hpc
+
+- name: Install deterministic CPU workload on every VM
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../workloads/cpu-workload.py"
+    dest: /opt/mini-hpc/bin/cpu-workload
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Define cluster example module
+  ansible.builtin.template:
+    src: mini-hpc-1.0.j2
+    dest: /usr/share/modules/modulefiles/mini-hpc/1.0
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Install batch examples on the login controller
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/../../workloads/{{ item }}"
+    dest: "/opt/mini-hpc/examples/{{ item }}"
+    owner: root
+    group: root
+    mode: '0644'
+  loop:
+    - cpu-short.sbatch
+    - cpu-array.sbatch
+  when: "'controllers' in group_names"

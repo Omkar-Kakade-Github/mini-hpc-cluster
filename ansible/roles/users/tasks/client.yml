@@ -1,0 +1,48 @@
+---
+- name: Install SSSD, LDAP client tools, and PAM integration
+  ansible.builtin.apt:
+    name:
+      - sssd-ldap
+      - sssd-tools
+      - libnss-sss
+      - libpam-sss
+      - ldap-utils
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+    lock_timeout: 300
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- name: Configure verified LDAPS identity and authentication
+  ansible.builtin.template:
+    src: sssd.conf.j2
+    dest: /etc/sssd/sssd.conf
+    owner: root
+    group: root
+    mode: '0600'
+  notify: Restart sssd
+
+- name: Enable SSSD on boot
+  ansible.builtin.service:
+    name: sssd
+    enabled: true
+    state: started
+
+- name: Permit LDAP password login on the controller
+  ansible.builtin.copy:
+    dest: /etc/ssh/sshd_config.d/01-mini-hpc-ldap.conf
+    content: |
+      PasswordAuthentication yes
+      UsePAM yes
+      PermitRootLogin no
+    owner: root
+    group: root
+    mode: '0644'
+  when: "'controllers' in group_names"
+  notify: Restart ssh
+
+- name: Validate controller SSH configuration before restart
+  ansible.builtin.command: /usr/sbin/sshd -t
+  changed_when: false
+  when: "'controllers' in group_names"

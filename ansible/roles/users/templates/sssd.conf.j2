@@ -1,0 +1,14 @@
+[sssd]
+config_file_version = 2
+services = nss, pam
+domains = {{ cluster_domain }}
+
+[domain/{{ cluster_domain }}]
+id_provider = ldap
+auth_provider = ldap
+ldap_uri = ldaps://{{ ldap_server_name }}
+ldap_search_base = {{ ldap_base_dn }}
+ldap_tls_cacert = /etc/ssl/certs/ca-certificates.crt
+ldap_tls_reqcert = demand
+cache_credentials = true
+enumerate = false

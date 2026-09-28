@@ -1,0 +1,138 @@
+---
+- name: Read configured QoS names
+  ansible.builtin.command: sacctmgr -n -P show qos format=Name
+  register: slurm_qos_names
+  changed_when: false
+
+- name: Add five-minute short QoS
+  ansible.builtin.command:
+    argv:
+      - sacctmgr
+      - -i
+      - add
+      - qos
+      - short
+      - MaxWall=00:05:00
+      - MaxJobsPU=2
+  when: "'short' not in slurm_qos_names.stdout_lines"
+
+- name: Read QoS limits
+  ansible.builtin.command: sacctmgr -n -P show qos format=Name,MaxWall,MaxJobsPU
+  register: slurm_qos_limits
+  changed_when: false
+
+- name: Restore short QoS limits after database drift
+  ansible.builtin.command:
+    argv: [sacctmgr, -i, modify, qos, short, set, MaxWall=00:05:00, MaxJobsPU=2]
+  when: "'short|00:05:00|2' not in slurm_qos_limits.stdout_lines"
+
+- name: Set normal QoS to one hour and four jobs per user
+  ansible.builtin.command:
+    argv: [sacctmgr, -i, modify, qos, normal, set, MaxWall=01:00:00, MaxJobsPU=4]
+  when: "'normal|01:00:00|4' not in slurm_qos_limits.stdout_lines"
+
+- name: Read configured Slurm accounts
+  ansible.builtin.command: sacctmgr -n -P show account format=Account
+  register: slurm_account_names
+  changed_when: false
+
+- name: Add team accounts with unequal fair-share weights
+  ansible.builtin.command:
+    argv:
+      - sacctmgr
+      - -i
+      - add
+      - account
+      - "{{ item.name }}"
+      - "Description={{ item.description }}"
+      - Organization=mini-hpc
+      - "Fairshare={{ item.share }}"
+  loop:
+    - { name: team_a, description: Student_team_A, share: 1 }
+    - { name: team_b, description: Student_team_B, share: 2 }
+  when: item.name not in slurm_account_names.stdout_lines
+
+- name: Read account association shares
+  ansible.builtin.command: sacctmgr -n -P show assoc where account=team_a,team_b format=Cluster,Account,User,Share
+  register: slurm_account_shares
+  changed_when: false
+
+- name: Restore account fair-share weights after database drift
+  ansible.builtin.command:
+    argv:
+      - sacctmgr
+      - -i
+      - modify
+      - account
+      - where
+      - "name={{ item.name }}"
+      - cluster=mini-hpc
+      - set
+      - "Fairshare={{ item.share }}"
+  loop:
+    - { name: team_a, share: 1 }
+    - { name: team_b, share: 2 }
+  when: "('mini-hpc|' + item.name + '||' + (item.share | string)) not in slurm_account_shares.stdout_lines"
+
+- name: Read registered Slurm users
+  ansible.builtin.command: sacctmgr -n -P show user format=User,DefaultAccount
+  register: slurm_user_accounts
+  changed_when: false
+
+- name: Register LDAP users with matching Slurm accounts
+  ansible.builtin.command:
+    argv:
+      - sacctmgr
+      - -i
+      - add
+      - user
+      - "{{ item.user }}"
+      - "Account={{ item.account }}"
+      - Cluster=mini-hpc
+      - "DefaultAccount={{ item.account }}"
+      - QOS=normal,short
+      - DefaultQOS=normal
+  loop:
+    - { user: student1, account: team_a }
+    - { user: student2, account: team_b }
+  when: "(item.user + '|' + item.account) not in slurm_user_accounts.stdout_lines"
+
+- name: Restore student default accounts after database drift
+  ansible.builtin.command:
+    argv:
+      - sacctmgr
+      - -i
+      - modify
+      - user
+      - where
+      - "name={{ item.user }}"
+      - set
+      - "DefaultAccount={{ item.account }}"
+  loop:
+    - { user: student1, account: team_a }
+    - { user: student2, account: team_b }
+  when: "(item.user + '|' + item.account) not in slurm_user_accounts.stdout_lines"
+
+- name: Read user association policy
+  ansible.builtin.command: sacctmgr -n -P show assoc where user=student1,student2 format=Cluster,Account,User,Share,QOS,DefaultQOS
+  register: slurm_student_associations
+  changed_when: false
+
+- name: Restore student QoS associations after database drift
+  ansible.builtin.command:
+    argv:
+      - sacctmgr
+      - -i
+      - modify
+      - user
+      - where
+      - "name={{ item.user }}"
+      - "account={{ item.account }}"
+      - cluster=mini-hpc
+      - set
+      - QOS=normal,short
+      - DefaultQOS=normal
+  loop:
+    - { user: student1, account: team_a }
+    - { user: student2, account: team_b }
+  when: "('mini-hpc|' + item.account + '|' + item.user + '|1|normal,short|normal') not in slurm_student_associations.stdout_lines"

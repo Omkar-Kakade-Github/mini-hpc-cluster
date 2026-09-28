@@ -1,0 +1,36 @@
+---
+- name: Distribute the public lab CA
+  hosts: all
+  become: true
+  tasks:
+    - name: Apply CA trust role tasks
+      ansible.builtin.import_role:
+        name: users
+        tasks_from: trust
+
+- name: Configure central LDAP directory
+  hosts: controllers
+  become: true
+  tasks:
+    - name: Apply LDAP server role tasks
+      ansible.builtin.import_role:
+        name: users
+        tasks_from: server
+
+- name: Populate central LDAP identities
+  hosts: controllers
+  become: true
+  tasks:
+    - name: Apply directory entry role tasks
+      ansible.builtin.import_role:
+        name: users
+        tasks_from: entries
+
+- name: Configure SSSD clients
+  hosts: all
+  become: true
+  tasks:
+    - name: Apply SSSD client role tasks
+      ansible.builtin.import_role:
+        name: users
+        tasks_from: client

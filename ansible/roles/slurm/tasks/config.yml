@@ -1,0 +1,58 @@
+---
+- name: Create common Slurm configuration directory
+  ansible.builtin.file:
+    path: /etc/slurm
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Distribute the same scheduler configuration to every VM
+  ansible.builtin.template:
+    src: slurm.conf.j2
+    dest: /etc/slurm/slurm.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: "{{ 'Restart slurmctld' if 'controllers' in group_names else 'Restart slurmd' }}"
+
+- name: Distribute cgroup policy to every VM
+  ansible.builtin.template:
+    src: cgroup.conf.j2
+    dest: /etc/slurm/cgroup.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: "{{ 'Restart slurmctld' if 'controllers' in group_names else 'Restart slurmd' }}"
+
+- name: Create controller state directory
+  ansible.builtin.file:
+    path: /var/lib/slurm/slurmctld
+    state: directory
+    owner: slurm
+    group: slurm
+    mode: '0750'
+  when: "'controllers' in group_names"
+
+- name: Create compute spool directory
+  ansible.builtin.file:
+    path: /var/spool/slurmd
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  when: "'compute' in group_names"
+
+- name: Enable controller daemon
+  ansible.builtin.service:
+    name: slurmctld
+    enabled: true
+    state: started
+  when: "'controllers' in group_names"
+
+- name: Enable compute daemon
+  ansible.builtin.service:
+    name: slurmd
+    enabled: true
+    state: started
+  when: "'compute' in group_names"

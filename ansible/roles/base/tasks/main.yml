@@ -1,4 +1,13 @@
 ---
+- name: Keep current and boot-time host maps aligned
+  ansible.builtin.template:
+    src: hosts.cluster.j2
+    dest: "{{ item }}"
+    mode: '0644'
+  loop:
+    - /etc/cloud/templates/hosts.debian.tmpl
+    - /etc/hosts
+
 - name: Configure controller time service
   when: "'controllers' in group_names"
   block:
